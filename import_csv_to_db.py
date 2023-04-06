@@ -16,7 +16,6 @@ mycursor = mydb.cursor()
 
 with open('./csv/서울특별시_성동구_일반음식점현황_20220818.csv') as csvfile:
     reader = csv.reader(csvfile)
-    i = 0
     for row in reader:
         # type = row[0] # 업종명
         date_of_license = row[1]    # 인허가일자
@@ -34,22 +33,20 @@ with open('./csv/서울특별시_성동구_일반음식점현황_20220818.csv') 
         else:
             latitude = None
             longitude = None
-        print(latitude)
-        print(longitude)
+        
         sql = "INSERT INTO restaurant (license_dttm, name, address, start_dttm, rest_type, lat, lon) VALUES (%s, %s, %s, %s, %s, %s, %s)"
         val = (date_of_license, restaurant_name, address, start_date, restaurant_type, latitude, longitude)
         mycursor.execute(sql, val)
 
         mydb.commit()
 
-        obj = {
-            "license_dttm": date_of_license,
-            "name" : restaurant_name,
-            "address" : address,
-            "start_dttm" : start_date,
-            "rest_type" : restaurant_type,
-            "lat" : latitude,
-            "lon" : longitude,
-        }
-        print(obj)
-    
+        # obj = {
+        #     "license_dttm": date_of_license,
+        #     "name" : restaurant_name,
+        #     "address" : address,
+        #     "start_dttm" : start_date,
+        #     "rest_type" : restaurant_type,
+        #     "lat" : latitude,
+        #     "lon" : longitude,
+        # }
+        # print(obj)
