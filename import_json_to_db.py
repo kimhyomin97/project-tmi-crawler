@@ -1,16 +1,31 @@
 import json
 import pymysql
+import pyproj
+
+# 좌표계 변환 함수
+def utm_to_wgs84(x, y):
+    utm_crs = pyproj.CRS(f"EPSG:2097") # 서울 열린데이터광장 x,y 좌표계 기준 : TM(EPSG:2097)
+    wgs84 = pyproj.CRS("EPSG:4326")  # WGS 84
+    
+    transformer = pyproj.Transformer.from_crs(utm_crs, wgs84, always_xy=True)
+    longitude, latitude = transformer.transform(x, y)
+    
+    return latitude, longitude
 
 # JSON 데이터 로드
 with open('./data/서울시 일반음식점 인허가 정보.json', 'r', encoding='utf-8') as file:
     data = json.load(file)
 
+# config 파일 로드
+with open('config.json', 'r') as config_file:
+    config = json.load(config_file)
+
 # MySQL 연결 설정
 connection = pymysql.connect(
-    host='localhost',
-    user='root',
-    password='1234',
-    db='tmi'
+    host=config['db_host'],
+    user=config['db_user'],
+    password=config['db_password'],
+    db=config['db_name']
 )
 
 cursor = connection.cursor()
@@ -20,13 +35,16 @@ try:
     with connection.cursor() as cursor:
         # Loop through the data and insert records into the restaurant table
         for record in data['DATA']:
-            sql = """INSERT INTO restaurant (address, lat, license_dttm, lon, name, rest_type, start_dttm)
-                     VALUES (%s, %s, %s, %s, %s, %s, %s)"""
-            # x, y 좌표 UTM -> WGS84 좌표변환 필요 || 테이블에 UTM 좌표저장 컬럼 추가 필요
-            cursor.execute(sql, (record['rdnwhladdr'], record['y'], record['apvpermymd'], record['x'], record['bplcnm'], record['uptaenm'], record['updatedt']))
+            print(record)
+            print(utm_to_wgs84(record['x'], record['y']))
+            break
+        #     sql = """INSERT INTO restaurant (address, lat, license_dttm, lon, name, rest_type, start_dttm)
+        #              VALUES (%s, %s, %s, %s, %s, %s, %s)"""
+        #     # x, y 좌표 UTM -> WGS84 좌표변환 필요 || 테이블에 UTM 좌표저장 컬럼 추가 필요
+        #     cursor.execute(sql, (record['rdnwhladdr'], record['y'], record['apvpermymd'], record['x'], record['bplcnm'], record['uptaenm'], record['updatedt']))
 
-        # Commit the changes
-        connection.commit()
+        # # Commit the changes
+        # connection.commit()
 
 finally:
     # Close the connection
