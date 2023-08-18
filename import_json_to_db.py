@@ -1,15 +1,15 @@
 import json
 import pymysql
 import pyproj
+from pyproj import Transformer
 
 # 좌표계 변환 함수
-def utm_to_wgs84(x, y):
-    utm_crs = pyproj.CRS(f"EPSG:2097") # 서울 열린데이터광장 x,y 좌표계 기준 : TM(EPSG:2097)
-    wgs84 = pyproj.CRS("EPSG:4326")  # WGS 84
-    
-    transformer = pyproj.Transformer.from_crs(utm_crs, wgs84, always_xy=True)
+def tm_to_wgs84(x, y):
+    tm_rs = pyproj.CRS("+proj=tmerc +lat_0=38 +lon_0=127.0028902777778 +k=1 +x_0=200000 +y_0=500000 +ellps=bessel +units=m +no_defs +towgs84=-115.80,474.99,674.11,1.16,-2.31,-1.63,6.43") # 서울 열린데이터광장 x,y 좌표계 기준 : TM(EPSG:2097) # 정확한 좌표값은 ESPG:5178
+    wgs84 = pyproj.CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs ")  # WGS 84
+    # CRS값 참조 : http://www.gisdeveloper.co.kr/?p=8942
+    transformer = pyproj.Transformer.from_crs(tm_rs, wgs84, always_xy=True)
     longitude, latitude = transformer.transform(x, y)
-    
     return latitude, longitude
 
 # JSON 데이터 로드
@@ -30,21 +30,20 @@ connection = pymysql.connect(
 
 cursor = connection.cursor()
 
+temp = 0
 ## 데이터 삽입
 try:
     with connection.cursor() as cursor:
         # Loop through the data and insert records into the restaurant table
         for record in data['DATA']:
-            print(record)
-            print(utm_to_wgs84(record['x'], record['y']))
-            break
-        #     sql = """INSERT INTO restaurant (address, lat, license_dttm, lon, name, rest_type, start_dttm)
-        #              VALUES (%s, %s, %s, %s, %s, %s, %s)"""
-        #     # x, y 좌표 UTM -> WGS84 좌표변환 필요 || 테이블에 UTM 좌표저장 컬럼 추가 필요
-        #     cursor.execute(sql, (record['rdnwhladdr'], record['y'], record['apvpermymd'], record['x'], record['bplcnm'], record['uptaenm'], record['updatedt']))
+            latitude, longitude = tm_to_wgs84(record['x'], record['y'])
+            sql = """INSERT INTO restaurant (address, lat, license_dttm, lon, name, rest_type, start_dttm)
+                     VALUES (%s, %s, %s, %s, %s, %s, %s)"""
+            # x, y 좌표 UTM -> WGS84 좌표변환 필요 || 테이블에 UTM 좌표저장 컬럼 추가 필요
+            cursor.execute(sql, (record['rdnwhladdr'], latitude, record['apvpermymd'], longitude, record['bplcnm'], record['uptaenm'], record['updatedt']))
 
-        # # Commit the changes
-        # connection.commit()
+        # Commit the changes
+        connection.commit()
 
 finally:
     # Close the connection
