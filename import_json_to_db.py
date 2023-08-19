@@ -37,11 +37,27 @@ try:
         # Loop through the data and insert records into the restaurant table
         for record in data['DATA']:
             latitude, longitude = tm_to_wgs84(record['x'], record['y'])
-            sql = """INSERT INTO restaurant (address, lat, license_dttm, lon, name, rest_type, start_dttm)
-                     VALUES (%s, %s, %s, %s, %s, %s, %s)"""
-            # x, y 좌표 UTM -> WGS84 좌표변환 필요 || 테이블에 UTM 좌표저장 컬럼 추가 필요
-            cursor.execute(sql, (record['rdnwhladdr'], latitude, record['apvpermymd'], longitude, record['bplcnm'], record['uptaenm'], record['updatedt']))
-
+            input_data = {
+                'address': record['sitewhladdr'],
+                'lat': latitude,
+                'license_dttm': record['apvpermymd'],
+                'lon': longitude,
+                'name': record['bplcnm'],
+                'rest_type': record['uptaenm'],
+                'state': record['trdstatenm'],
+                'postal_code': record['sitepostno'],
+                'homepage': record['homepage'],
+                'tm_x': float(record['x']),
+                'tm_y': float(record['y']),
+            }
+            
+            insert_query = """
+            INSERT INTO restaurant (address, lat, license_dttm, lon, name, rest_type, state, postal_code, homepage, tm_x, tm_y)
+            VALUES (%(address)s, %(lat)s, %(license_dttm)s, %(lon)s, %(name)s, %(rest_type)s, %(state)s, %(postal_code)s, %(homepage)s, %(tm_x)s, %(tm_y)s)
+            """
+            cursor.execute(insert_query, input_data)
+            connection.commit()
+            
         # Commit the changes
         connection.commit()
 
