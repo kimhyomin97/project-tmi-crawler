@@ -36,7 +36,13 @@ try:
     with connection.cursor() as cursor:
         # Loop through the data and insert records into the restaurant table
         for record in data['DATA']:
-            latitude, longitude = tm_to_wgs84(record['x'], record['y'])
+            if(record['x'] == "" or record['y'] == "" or record['x'] == None or record['y'] == None):
+                latitude, longitude = 0, 0
+                tm_x, tm_y = 0, 0
+            else:
+                latitude, longitude = tm_to_wgs84(record['x'], record['y'])
+                tm_x = float(record['x'])
+                tm_y = float(record['y'])
             input_data = {
                 'address': record['sitewhladdr'],
                 'lat': latitude,
@@ -47,8 +53,8 @@ try:
                 'state': record['trdstatenm'],
                 'postal_code': record['sitepostno'],
                 'homepage': record['homepage'],
-                'tm_x': float(record['x']),
-                'tm_y': float(record['y']),
+                'tm_x': tm_x,
+                'tm_y': tm_y,
             }
             
             insert_query = """
